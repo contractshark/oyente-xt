@@ -24,7 +24,9 @@ class AstWalker:
     def _check_attributes(self, node, attributes):
         for name in attributes:
             if name == "attributes":
-                if "attributes" not in node or not self._check_attributes(node["attributes"], attributes["attributes"]):
+                if "attributes" not in node or not self._check_attributes(
+                    node["attributes"], attributes["attributes"]
+                ):
                     return False
             else:
                 if name not in node or node[name] != attributes[name]:

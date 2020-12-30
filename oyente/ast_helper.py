@@ -2,6 +2,7 @@ from utils import run_command
 from ast_walker import AstWalker
 import json
 
+
 class AstHelper:
     def __init__(self, filename, input_type, remap, allow_paths=""):
         self.input_type = input_type
@@ -16,14 +17,18 @@ class AstHelper:
         self.contracts = self.extract_contract_definitions(self.source_list)
 
     def get_source_list_standard_json(self, filename):
-        with open('standard_json_output', 'r') as f:
+        with open("standard_json_output", "r") as f:
             out = f.read()
         out = json.loads(out)
         return out["sources"]
 
     def get_source_list(self, filename):
         if self.allow_paths:
-            cmd = "solc --combined-json ast %s %s --allow-paths %s" % (self.remap, filename, self.allow_paths)
+            cmd = "solc --combined-json ast %s %s --allow-paths %s" % (
+                self.remap,
+                filename,
+                self.allow_paths,
+            )
         else:
             cmd = "solc --combined-json ast %s %s" % (self.remap, filename)
         out = run_command(cmd)
@@ -31,11 +36,7 @@ class AstHelper:
         return out["sources"]
 
     def extract_contract_definitions(self, sourcesList):
-        ret = {
-            "contractsById": {},
-            "contractsByName": {},
-            "sourcesByContract": {}
-        }
+        ret = {"contractsById": {}, "contractsByName": {}, "sourcesByContract": {}}
         walker = AstWalker()
         for k in sourcesList:
             if self.input_type == "solidity":
@@ -47,17 +48,22 @@ class AstHelper:
             for node in nodes:
                 ret["contractsById"][node["id"]] = node
                 ret["sourcesByContract"][node["id"]] = k
-                ret["contractsByName"][k + ':' + node["attributes"]["name"]] = node
+                ret["contractsByName"][k + ":" + node["attributes"]["name"]] = node
         return ret
 
     def get_linearized_base_contracts(self, id, contractsById):
-        return map(lambda id: contractsById[id], contractsById[id]["attributes"]["linearizedBaseContracts"])
+        return map(
+            lambda id: contractsById[id],
+            contractsById[id]["attributes"]["linearizedBaseContracts"],
+        )
 
     def extract_state_definitions(self, c_name):
         node = self.contracts["contractsByName"][c_name]
         state_vars = []
         if node:
-            base_contracts = self.get_linearized_base_contracts(node["id"], self.contracts["contractsById"])
+            base_contracts = self.get_linearized_base_contracts(
+                node["id"], self.contracts["contractsById"]
+            )
             base_contracts = list(base_contracts)
             base_contracts = list(reversed(base_contracts))
             for contract in base_contracts:
@@ -81,7 +87,7 @@ class AstHelper:
         walker = AstWalker()
         nodes = []
         if node:
-            walker.walk(node, {"name":  "FunctionCall"}, nodes)
+            walker.walk(node, {"name": "FunctionCall"}, nodes)
         return nodes
 
     def extract_func_calls_definitions(self):
@@ -115,7 +121,7 @@ class AstHelper:
             list_of_attributes = [
                 {"attributes": {"member_name": "delegatecall"}},
                 {"attributes": {"member_name": "call"}},
-                {"attributes": {"member_name": "callcode"}}
+                {"attributes": {"member_name": "callcode"}},
             ]
             walker.walk(node, list_of_attributes, nodes)
 
@@ -125,42 +131,44 @@ class AstHelper:
                 type_of_first_child = node["children"][0]["attributes"]["type"]
                 if type_of_first_child.split(" ")[0] == "contract":
                     contract = type_of_first_child.split(" ")[1]
-                    contract_path = self._find_contract_path(self.contracts["contractsByName"].keys(), contract)
+                    contract_path = self._find_contract_path(
+                        self.contracts["contractsByName"].keys(), contract
+                    )
                     callee_src_pairs.append((contract_path, node["src"]))
         return callee_src_pairs
 
     def get_func_name_to_params(self, c_name):
-        node = self.contracts['contractsByName'][c_name]
+        node = self.contracts["contractsByName"][c_name]
         walker = AstWalker()
         func_def_nodes = []
         if node:
-            walker.walk(node, {'name': 'FunctionDefinition'}, func_def_nodes)
+            walker.walk(node, {"name": "FunctionDefinition"}, func_def_nodes)
 
         func_name_to_params = {}
         for func_def_node in func_def_nodes:
-            func_name = func_def_node['attributes']['name']
+            func_name = func_def_node["attributes"]["name"]
             params_nodes = []
-            walker.walk(func_def_node, {'name': 'ParameterList'}, params_nodes)
+            walker.walk(func_def_node, {"name": "ParameterList"}, params_nodes)
 
             params_node = params_nodes[0]
             param_nodes = []
-            walker.walk(params_node, {'name': 'VariableDeclaration'}, param_nodes)
+            walker.walk(params_node, {"name": "VariableDeclaration"}, param_nodes)
 
             for param_node in param_nodes:
-                var_name = param_node['attributes']['name']
-                type_name = param_node['children'][0]['name']
-                if type_name == 'ArrayTypeName':
+                var_name = param_node["attributes"]["name"]
+                type_name = param_node["children"][0]["name"]
+                if type_name == "ArrayTypeName":
                     literal_nodes = []
-                    walker.walk(param_node, {'name': 'Literal'}, literal_nodes)
+                    walker.walk(param_node, {"name": "Literal"}, literal_nodes)
                     if literal_nodes:
-                        array_size = int(literal_nodes[0]['attributes']['value'])
+                        array_size = int(literal_nodes[0]["attributes"]["value"])
                     else:
                         array_size = 1
-                    param = {'name': var_name, 'type': type_name, 'value': array_size}
-                elif type_name == 'ElementaryTypeName':
-                    param = {'name': var_name, 'type': type_name}
+                    param = {"name": var_name, "type": type_name, "value": array_size}
+                elif type_name == "ElementaryTypeName":
+                    param = {"name": var_name, "type": type_name}
                 else:
-                    param = {'name': var_name, 'type': type_name}
+                    param = {"name": var_name, "type": type_name}
 
                 if func_name not in func_name_to_params:
                     func_name_to_params[func_name] = [param]
