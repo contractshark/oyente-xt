@@ -1,0 +1,20 @@
+{
+  "name": "oyente",
+  "version": "1.0.0",
+  "description": "Oyente ======",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enzymefinance/oyente.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/enzymefinance/oyente/issues"
+  },
+  "homepage": "https://github.com/enzymefinance/oyente#readme"
+}
